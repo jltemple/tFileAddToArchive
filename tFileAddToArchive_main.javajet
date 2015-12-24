@@ -1,0 +1,95 @@
+/* TODO:
+    So the files need to be quote enclosed in the end, but can be pased not quote enclosed I think, should I account for both? 
+    What do other official Talend components do?
+
+    Split this back out in begin, main, end, or find out if it is safe to just leave it in _main.javajet
+
+*/
+
+<%@ jet
+    imports="
+        org.talend.core.model.process.INode
+        org.talend.core.model.process.ElementParameterParser
+        org.talend.core.model.metadata.IMetadataTable
+        org.talend.core.model.metadata.IMetadataColumn
+        org.talend.core.model.process.IConnection
+        org.talend.core.model.process.IConnectionCategory
+        org.talend.designer.codegen.config.CodeGeneratorArgument
+        org.talend.core.model.metadata.types.JavaTypesManager
+        org.talend.core.model.metadata.types.JavaType
+        java.util.List
+        java.util.Map
+        java.net.URI
+        java.util.Map
+        java.util.HashMap
+        java.nio.file.FileSystem
+        java.nio.file.FileSystems
+        java.nio.file.Path
+        java.nio.file.Files    
+    "
+%>
+<%
+    CodeGeneratorArgument codeGenArgument = (CodeGeneratorArgument) argument;
+    INode node = (INode)codeGenArgument.getArgument();
+    String cid = node.getUniqueName(); 
+
+    String zipFile = ElementParameterParser.getValue(node, "__ZIPFILE__");
+    String fileName = ElementParameterParser.getValue(node, "__FILENAME__");
+    String filePath = ElementParameterParser.getValue(node, "__FILEPATH__");
+    boolean windows = false;
+    boolean letter_start = false;
+
+
+    /* Because we do jar:file: to get the filesystem,
+     * we need to handle a bunch of windows file odities
+     * that I can't expect the user to be responsible for in Talend
+     */
+    if (System.getProperty("os.name").startsWith("Windows")) {
+        windows = true;
+        // if(zipFile.matches("^[a-zA-Z]:.*$")){
+        //     letter_start = true;
+        //     zipFile = zipFile.substring(2);
+        // }
+        if(!zipFile.startsWith("/"))
+            zipFile = "/" + zipFile;
+    }
+    else{
+        if(!zipFile.startsWith("/"))
+            zipFile = "/" + zipFile;
+    }
+
+%>
+
+/*<%=letter_start%>*/
+/* <%= zipFile %> */
+
+/* Logging */
+System.out.println("Setting up zipfs");
+
+/* Define ZIP File System Properies in HashMap */    
+java.util.Map<String, String> zip_properties = new java.util.HashMap<>(); 
+/* We want to read an existing ZIP File, so we set this to False */
+zip_properties.put("create", "false");
+zip_properties.put("encoding", "UTF-8");
+
+/* Specify the path to the ZIP File that we want to read as a File System, incoming as zipFile */
+java.net.URI zip_disk = java.net.URI.create("jar:file:<%= zipFile %>");
+
+/* Create ZIP File System */
+java.nio.file.FileSystem zipfs_<%= cid %> = java.nio.file.FileSystems.newFileSystem(zip_disk, zip_properties);
+
+/* Checking if stuff exists */
+System.out.println("in main");
+
+/* Get the Path in ZIP File */
+java.nio.file.Path zipFilePath = zipfs_<%=cid%>.getPath(<%= fileName %>);
+
+/* Check if the file exists, if it doesn't- add it! */
+if(!java.nio.file.Files.exists(zipFilePath)){
+    /* Append file to ZIP File */
+    java.nio.file.Path addNewFile = java.nio.file.Paths.get(<%= filePath %>);
+    java.nio.file.Files.copy(addNewFile,zipFilePath);
+} 
+
+/* Close the ZIP File System */
+zipfs_<%= cid %>.close();
