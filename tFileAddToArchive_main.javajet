@@ -39,32 +39,11 @@
     boolean windows = false;
     boolean letter_start = false;
 
-
-    /* Because we do jar:file: to get the filesystem,
-     * we need to handle a bunch of windows file odities
-     * that I can't expect the user to be responsible for in Talend
-     */
-    if (System.getProperty("os.name").startsWith("Windows")) {
-        windows = true;
-        // if(zipFile.matches("^[a-zA-Z]:.*$")){
-        //     letter_start = true;
-        //     zipFile = zipFile.substring(2);
-        // }
-        if(!zipFile.startsWith("/"))
-            zipFile = "/" + zipFile;
-    }
-    else{
-        if(!zipFile.startsWith("/"))
-            zipFile = "/" + zipFile;
-    }
+    if(!zipFile.startsWith("/"))
+        zipFile = "/" + zipFile;
 
 %>
 
-/*<%=letter_start%>*/
-/* <%= zipFile %> */
-
-/* Logging */
-System.out.println("Setting up zipfs");
 
 /* Define ZIP File System Properies in HashMap */    
 java.util.Map<String, String> zip_properties = new java.util.HashMap<>(); 
@@ -77,9 +56,6 @@ java.net.URI zip_disk = java.net.URI.create("jar:file:<%= zipFile %>");
 
 /* Create ZIP File System */
 java.nio.file.FileSystem zipfs_<%= cid %> = java.nio.file.FileSystems.newFileSystem(zip_disk, zip_properties);
-
-/* Checking if stuff exists */
-System.out.println("in main");
 
 /* Get the Path in ZIP File */
 java.nio.file.Path zipFilePath = zipfs_<%=cid%>.getPath(<%= fileName %>);
